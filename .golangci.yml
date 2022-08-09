@@ -1,3 +1,4 @@
+---
 run:
   timeout: 1m
 
@@ -8,6 +9,8 @@ linters:
     - testpackage
     - gochecknoglobals
     - exhaustivestruct
+    - exhaustruct
+    - nonamedreturns
     - paralleltest
     - godox
     - cyclop
@@ -15,6 +18,7 @@ linters:
     - exhaustive
     - goerr113
     - errorlint
+    - varnamelen
   fast: false
 
 # Settings for specific linters
@@ -51,6 +55,14 @@ issues:
     - linters:
         - lll
       source: "json:"
+
+    - path: _test.go
+      linters:
+        - nosnakecase
+
+    - text: "O_WRONLY|O_RDWR|O_CREATE|O_TRUNC|O_APPEND"
+      linters:
+        - nosnakecase
 
     - linters:
         - gocritic
