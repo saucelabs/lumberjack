@@ -5,14 +5,13 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/BurntSushi/toml"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 // !!!NOTE!!!
@@ -54,7 +53,7 @@ func TestOpenExisting(t *testing.T) {
 
 	filename := logFile(dir)
 	data := []byte("foo!")
-	err := ioutil.WriteFile(filename, data, fileModeNew)
+	err := os.WriteFile(filename, data, fileModeNew)
 	isNil(t, err)
 	existsWithContent(t, filename, data)
 
@@ -176,7 +175,7 @@ func TestFirstWriteRotate(t *testing.T) {
 	defer l.Close()
 
 	start := []byte("boooooo!")
-	err := ioutil.WriteFile(filename, start, 0600)
+	err := os.WriteFile(filename, start, 0o600)
 	isNil(t, err)
 
 	newFakeTime()
@@ -264,13 +263,13 @@ func TestMaxBackups(t *testing.T) {
 	// create a file that is close to but different from the logfile name.
 	// It shouldn't get caught by our deletion filters.
 	notlogfile := logFile(dir) + ".foo"
-	err = ioutil.WriteFile(notlogfile, []byte("data"), fileModeNew)
+	err = os.WriteFile(notlogfile, []byte("data"), fileModeNew)
 	isNil(t, err)
 
 	// Make a directory that exactly matches our log file filters... it still
 	// shouldn't get caught by the deletion filter since it's a directory.
 	notlogfiledir := backupFile(dir)
-	err = os.Mkdir(notlogfiledir, 0700)
+	err = os.Mkdir(notlogfiledir, 0o700)
 	isNil(t, err)
 
 	newFakeTime()
@@ -282,7 +281,7 @@ func TestMaxBackups(t *testing.T) {
 	// not be counted since both the compressed and the uncompressed
 	// log files still exist.
 	compLogFile := fourthFilename + compressSuffix
-	err = ioutil.WriteFile(compLogFile, []byte("compress"), fileModeNew)
+	err = os.WriteFile(compLogFile, []byte("compress"), fileModeNew)
 	isNil(t, err)
 
 	// this will make us rotate again
@@ -330,24 +329,24 @@ func TestCleanupExistingBackups(t *testing.T) {
 
 	data := []byte("data")
 	backup := backupFile(dir)
-	err := ioutil.WriteFile(backup, data, fileModeNew)
+	err := os.WriteFile(backup, data, fileModeNew)
 	isNil(t, err)
 
 	newFakeTime()
 
 	backup = backupFile(dir)
-	err = ioutil.WriteFile(backup+compressSuffix, data, fileModeNew)
+	err = os.WriteFile(backup+compressSuffix, data, fileModeNew)
 	isNil(t, err)
 
 	newFakeTime()
 
 	backup = backupFile(dir)
-	err = ioutil.WriteFile(backup, data, fileModeNew)
+	err = os.WriteFile(backup, data, fileModeNew)
 	isNil(t, err)
 
 	// now create a primary log file with some data
 	filename := logFile(dir)
-	err = ioutil.WriteFile(filename, data, fileModeNew)
+	err = os.WriteFile(filename, data, fileModeNew)
 	isNil(t, err)
 
 	l := &Logger{
@@ -447,7 +446,7 @@ func TestOldLogFiles(t *testing.T) {
 
 	filename := logFile(dir)
 	data := []byte("data")
-	err := ioutil.WriteFile(filename, data, 07)
+	err := os.WriteFile(filename, data, 0o7)
 	isNil(t, err)
 
 	// This gives us a time with the same precision as the time we get from the
@@ -456,7 +455,7 @@ func TestOldLogFiles(t *testing.T) {
 	isNil(t, err)
 
 	backup := backupFile(dir)
-	err = ioutil.WriteFile(backup, data, 07)
+	err = os.WriteFile(backup, data, 0o7)
 	isNil(t, err)
 
 	newFakeTime()
@@ -465,7 +464,7 @@ func TestOldLogFiles(t *testing.T) {
 	isNil(t, err)
 
 	backup2 := backupFile(dir)
-	err = ioutil.WriteFile(backup2, data, 07)
+	err = os.WriteFile(backup2, data, 0o7)
 	isNil(t, err)
 
 	l := &Logger{Filename: filename}
@@ -648,9 +647,9 @@ func TestCompressOnResume(t *testing.T) {
 	// Create a backup file and empty "compressed" file.
 	filename2 := backupFile(dir)
 	b := []byte("foo!")
-	err := ioutil.WriteFile(filename2, b, fileModeNew)
+	err := os.WriteFile(filename2, b, fileModeNew)
 	isNil(t, err)
-	err = ioutil.WriteFile(filename2+compressSuffix, []byte{}, fileModeNew)
+	err = os.WriteFile(filename2+compressSuffix, []byte{}, fileModeNew)
 	isNil(t, err)
 
 	newFakeTime()
@@ -751,7 +750,7 @@ func makeTempDir(tb testing.TB, name string) string {
 	dir := time.Now().Format(name + backupTimeFormat)
 	dir = filepath.Join(os.TempDir(), dir)
 
-	isNilUp(tb, os.Mkdir(dir, 0700))
+	isNilUp(tb, os.Mkdir(dir, 0o700))
 
 	return dir
 }
@@ -764,7 +763,7 @@ func existsWithContent(tb testing.TB, path string, content []byte) {
 	isNilUp(tb, err)
 	equalsUp(tb, int64(len(content)), info.Size())
 
-	b, err := ioutil.ReadFile(path)
+	b, err := os.ReadFile(path)
 	isNilUp(tb, err)
 	equalsUp(tb, content, b)
 }
@@ -787,7 +786,7 @@ func backupFileLocal(dir string) string {
 func fileCount(tb testing.TB, dir string, exp int) {
 	tb.Helper()
 
-	files, err := ioutil.ReadDir(dir)
+	files, err := os.ReadDir(dir)
 	isNilUp(tb, err)
 	// Make sure no other files were created.
 	equalsUp(tb, exp, len(files))

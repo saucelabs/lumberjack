@@ -3,7 +3,7 @@
 // Note that this is v3.0 of lumberjack, and should be imported using gopkg.in
 // thusly:
 //
-//   import "github.com/saucelabs/lumberjack/v3"
+//	import "github.com/saucelabs/lumberjack/v3"
 //
 // The package name remains simply lumberjack, and the code resides at
 // https://github.com/saucelabs/lumberjack/v3 under the v3.0 branch.
@@ -26,7 +26,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
@@ -41,9 +40,9 @@ const (
 	dayInHours       = 24 * time.Hour
 	defaultMaxSize   = 100
 
-	dirMode              = 0755
-	fileModeNew          = 0600
-	fileModeAlreadyExist = 0644
+	dirMode              = 0o755
+	fileModeNew          = 0o600
+	fileModeAlreadyExist = 0o644
 )
 
 // Ensure we always implement io.WriteCloser.
@@ -71,7 +70,7 @@ var _ io.WriteCloser = (*Logger)(nil)
 // `/var/log/foo/server.log`, a backup created at 6:30pm on Nov 11 2016 would
 // use the filename `/var/log/foo/server-2016-11-04T18-30-00.000.log`
 //
-// Cleaning Up Old Log Files
+// # Cleaning Up Old Log Files
 //
 // Whenever a new logfile gets created, old log files may be deleted.  The most
 // recent files according to the encoded timestamp will be retained, up to a
@@ -81,6 +80,7 @@ var _ io.WriteCloser = (*Logger)(nil)
 // time, which may differ from the last time that file was written to.
 //
 // If MaxBackups and MaxAge are both 0, no old log files will be deleted.
+//
 //nolint:maligned
 type Logger struct {
 	// Compress determines if the rotated log files should be compressed
@@ -336,6 +336,7 @@ func (l *Logger) filename() string {
 // Log files are compressed if enabled via configuration and old log
 // files are removed, keeping at most l.MaxBackups files, as long as
 // none of them are older than MaxAge.
+//
 //nolint:gocognit
 func (l *Logger) millRunOnce() error {
 	if l.MaxBackups == 0 && l.MaxAge == 0 && !l.Compress {
@@ -447,7 +448,7 @@ func (l *Logger) mill() {
 // oldLogFiles returns the list of backup log files stored in the same
 // directory as the current log file, sorted by ModTime.
 func (l *Logger) oldLogFiles() ([]logInfo, error) {
-	files, err := ioutil.ReadDir(l.dir())
+	files, err := os.ReadDir(l.dir())
 	if err != nil {
 		return nil, fmt.Errorf("can't read log file directory: %s", err)
 	}
@@ -462,13 +463,17 @@ func (l *Logger) oldLogFiles() ([]logInfo, error) {
 		}
 
 		if t, err := l.timeFromName(f.Name(), prefix, ext); err == nil {
-			logFiles = append(logFiles, logInfo{f, t})
+			if fInfo, fErr := f.Info(); fErr == nil {
+				logFiles = append(logFiles, logInfo{fInfo, t})
+			}
 
 			continue
 		}
 
 		if t, err := l.timeFromName(f.Name(), prefix, ext+compressSuffix); err == nil {
-			logFiles = append(logFiles, logInfo{f, t})
+			if fInfo, fErr := f.Info(); fErr == nil {
+				logFiles = append(logFiles, logInfo{fInfo, t})
+			}
 
 			continue
 		}
